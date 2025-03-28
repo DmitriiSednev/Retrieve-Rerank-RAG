@@ -1,63 +1,33 @@
-# RAG (Retrieval-Augmented Generation) System
+# Retrieve-Rerank-RAG
 
-Система для работы с документами на основе RAG подхода. Позволяет загружать документы различных форматов, создавать векторную базу данных и выполнять семантический поиск с генерацией ответов.
+Retrieve & Rerank RAG система с поддержкой различных стратегий поиска и ранжирования.
 
 ## Особенности
 
-- Поддержка различных форматов документов (PDF, TXT, DOCX, MD)
-- Умное разбиение документов на чанки с сохранением контекста
-- Уникальная идентификация каждого фрагмента (source:page:chunk)
-- Поддержка различных embedding моделей (OpenAI, Bedrock)
-- Вывод топ-5 релевантных фрагментов с метаданными
-- Генерация ответов на основе контекста
-
-## Как это работает
-
-### Разбиение на чанки
-- Размер чанка: 1000 символов
-- Перекрытие между чанками: 200 символов
-- Разделители: параграфы, строки, пробелы
-- Каждый чанк получает уникальный индекс в рамках документа
-
-### Релевантность
-- Используется косинусное сходство между векторами
-- Score = 1.0: полное совпадение
-- Score = 0.0: полное несовпадение
-- Чем ближе score к 1.0, тем релевантнее чанк
-- Система возвращает 5 чанков с наивысшей релевантностью
-
-### Метаданные
-Каждый чанк содержит:
-- Источник (имя файла)
-- Номер страницы (начиная с 1)
-- Индекс чанка (начиная с 0)
-- Оценку релевантности (score)
-
-## Структура проекта
-
-```
-.
-├── data/                   # Директория с документами
-├── database.py            # Основной класс для работы с базой данных
-├── document_loaders.py    # Загрузчики документов разных форматов
-├── get_embedding_function.py # Конфигурация embedding моделей
-├── test_rag.py           # Тесты системы
-└── requirements.txt      # Зависимости проекта
-```
+- **Retrieve & Rerank**: Повышает релевантность за счет оценки полученных документов перед отправкой в LLM
+- **Множественные стратегии поиска**:
+  - Similarity Search: стандартный поиск по релевантности
+  - MMR (Maximum Marginal Relevance): поиск с учетом разнообразия результатов
+  - Hybrid Search: комбинированный поиск, использующий оба метода
+- **Настраиваемые параметры**:
+  - `lambda_param`: баланс между релевантностью и разнообразием в MMR
+  - `similarity_weight`: вес для результатов similarity поиска в hybrid режиме
+  - `min_score`: минимальный порог релевантности
+  - `k`: количество возвращаемых результатов
 
 ## Установка
 
 1. Клонируйте репозиторий:
 ```bash
-git clone <repository-url>
-cd <repository-name>
+git clone https://github.com/DmitriiSednev/Retrieve-Rerank-RAG.git
+cd Retrieve-Rerank-RAG
 ```
 
-2. Создайте виртуальное окружение:
+2. Создайте виртуальное окружение и активируйте его:
 ```bash
 python -m venv .venv
-source .venv/bin/activate  # Linux/Mac
-.venv\Scripts\activate     # Windows
+.venv\Scripts\activate  # для Windows
+source .venv/bin/activate  # для Linux/Mac
 ```
 
 3. Установите зависимости:
@@ -65,64 +35,43 @@ source .venv/bin/activate  # Linux/Mac
 pip install -r requirements.txt
 ```
 
-4. Создайте файл `.env` на основе `.env.example`:
-```bash
-cp .env.example .env
+4. Создайте файл `.env` на основе `.env.example` и добавьте ваш API ключ:
 ```
-
-5. Заполните `.env` вашими API ключами:
-```
-OPENAI_API_KEY=your-api-key
+OPENAI_API_KEY=your_api_key_here
 ```
 
 ## Использование
 
-1. Поместите ваши документы в директорию `data/`
-
-2. Запустите интерактивный режим:
-```bash
-python database.py
-```
-
-3. Задавайте вопросы. Система покажет:
-   - 5 наиболее релевантных фрагментов
-   - Источник каждого фрагмента
-   - Номер страницы
-   - Индекс чанка
-   - Оценку релевантности
-   - Сгенерированный ответ
-
-## Программное использование
-
 ```python
 from database import ChromaDatabase
-from document_loaders import load_documents
 
 # Инициализация базы данных
 db = ChromaDatabase()
 
-# Загрузка документов
-documents = load_documents("path/to/docs")
+# Добавление документов
 db.add_documents(documents)
 
-# Запрос к базе
-response = db.query("Ваш вопрос")
-print(response)
+# Поиск с разными стратегиями
+# 1. Стандартный поиск
+result = db.query("Ваш запрос", search_type="similarity")
+
+# 2. MMR поиск
+result = db.query("Ваш запрос", search_type="mmr", lambda_param=0.5)
+
+# 3. Гибридный поиск
+result = db.query(
+    "Ваш запрос",
+    search_type="hybrid",
+    lambda_param=0.5,
+    similarity_weight=0.7
+)
 ```
 
 ## Тестирование
 
 ```bash
-pytest test_rag.py -v
+python -m pytest test_rag.py -v
 ```
-
-## Конфигурация
-
-Настройки системы хранятся в `.env`:
-
-- `OPENAI_API_KEY` - API ключ OpenAI
-- `EMBEDDING_TYPE` - Тип embedding модели (openai, bedrock)
-- `OPENAI_MODEL` - Модель OpenAI (по умолчанию: gpt-3.5-turbo)
 
 ## Лицензия
 
