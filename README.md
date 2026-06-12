@@ -1,6 +1,29 @@
 # Retrieve-Rerank-RAG
 
+![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python&logoColor=white)
+![LangChain](https://img.shields.io/badge/LangChain-RAG-1C3C3C?logo=langchain&logoColor=white)
+![Embeddings](https://img.shields.io/badge/Search-similarity%20%7C%20MMR%20%7C%20hybrid-orange)
+
 Retrieve & Rerank RAG система с поддержкой различных стратегий поиска и ранжирования.
+
+## Как работает пайплайн
+
+```mermaid
+flowchart LR
+    Q[Запрос пользователя] --> E[Эмбеддинг запроса]
+    E --> R{Стратегия поиска}
+    R -->|similarity| S1[Similarity Search]
+    R -->|mmr| S2[MMR — релевантность + разнообразие]
+    R -->|hybrid| S3[Hybrid — взвешенная комбинация]
+    S1 --> RR[Rerank: скоринг кандидатов]
+    S2 --> RR
+    S3 --> RR
+    RR --> F[Фильтр по min_score]
+    F --> CTX[Топ-k чанков как контекст]
+    CTX --> LLM[LLM генерирует ответ]
+```
+
+Ключевая идея: документы из векторного поиска **переоцениваются** перед отправкой в LLM — в контекст попадает не «что нашлось», а «что действительно релевантно».
 
 ## Особенности
 
